@@ -7,12 +7,16 @@ exports.handler = async function (event) {
   if (!ANTHROPIC_API_KEY) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "API key not configured on server." }),
+      body: JSON.stringify({ error: "API key not configured." }),
     };
   }
 
   try {
     const body = JSON.parse(event.body);
+
+    // Use correct model name
+    body.model = "claude-sonnet-4-5";
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -24,17 +28,24 @@ exports.handler = async function (event) {
     });
 
     const data = await response.json();
+
+    // Log error details if API call failed
+    if (!response.ok) {
+      console.error("Anthropic API error:", JSON.stringify(data));
+    }
+
     return {
       statusCode: response.status,
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify(data),
     };
   } catch (err) {
+    console.error("Proxy error:", err.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Proxy error: " + err.message }),
